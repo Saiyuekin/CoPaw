@@ -40,7 +40,10 @@ def build_conversation_relay_twiml(
 def build_busy_twiml(
     message: str = "CoPaw is on another call. Please try again later.",
 ) -> str:
-    """Build TwiML that speaks a message and hangs up."""
+    """Build TwiML that speaks a busy message.
+
+    Twilio automatically ends the call after all verbs complete.
+    """
     response_el = ET.Element("Response")
     say_el = ET.SubElement(response_el, "Say")
     say_el.text = message
@@ -51,5 +54,8 @@ def build_busy_twiml(
 def build_error_twiml(
     message: str = "An error occurred. Please try again later.",
 ) -> str:
-    """Build TwiML that speaks an error message and hangs up."""
+    """Build TwiML that speaks an error message.
+
+    Twilio automatically ends the call after all verbs complete.
+    """
     return build_busy_twiml(message)

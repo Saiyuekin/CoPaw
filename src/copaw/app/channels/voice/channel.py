@@ -2,6 +2,7 @@
 """Voice Channel: Twilio ConversationRelay + Cloudflare Tunnel."""
 from __future__ import annotations
 
+import collections
 import logging
 import secrets
 from typing import Any, Dict, Optional
@@ -44,7 +45,7 @@ class VoiceChannel(BaseChannel):
         self.tunnel_mgr = None  # CloudflareTunnelDriver, set by from_config
         self._config: Any = None
         self._enabled = False
-        self._pending_ws_tokens: set[str] = set()
+        self._pending_ws_tokens: collections.OrderedDict[str, None] = collections.OrderedDict()
 
     @classmethod
     def from_config(
@@ -195,21 +196,17 @@ class VoiceChannel(BaseChannel):
 
     def create_ws_token(self) -> str:
         """Generate a single-use token for WebSocket authentication."""
-        # Evict oldest tokens if the set grows too large (e.g. calls
+        # Evict oldest tokens if the dict grows too large (e.g. calls
         # that generated TwiML but never connected via WebSocket).
         while len(self._pending_ws_tokens) >= self._MAX_PENDING_TOKENS:
-            self._pending_ws_tokens.pop()
+            self._pending_ws_tokens.popitem(last=False)
         token = secrets.token_urlsafe(32)
-        self._pending_ws_tokens.add(token)
+        self._pending_ws_tokens[token] = None
         return token
 
     def validate_ws_token(self, token: str) -> bool:
         """Validate and consume a single-use WebSocket token."""
-        try:
-            self._pending_ws_tokens.remove(token)
-            return True
-        except KeyError:
-            return False
+        return self._pending_ws_tokens.pop(token, ...) is not ...
 
     def get_tunnel_url(self) -> str | None:
         """Return the current tunnel public URL."""
