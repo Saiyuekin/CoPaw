@@ -50,7 +50,7 @@ class TestVoiceChannelConfig:
                 "twilio_auth_token": "secret",
                 "phone_number": "+15559999999",
                 "phone_number_sid": "PN456",
-            }
+            },
         }
         ch = ChannelConfig(**data)
         assert ch.voice.enabled is True

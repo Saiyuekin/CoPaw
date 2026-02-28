@@ -5,7 +5,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from copaw.app.channels.voice.conversation_relay import ConversationRelayHandler
+from copaw.app.channels.voice.conversation_relay import (
+    ConversationRelayHandler,
+)
 from copaw.app.channels.voice.session import CallSessionManager
 
 
@@ -24,7 +26,7 @@ def _make_handler(
     session_mgr = CallSessionManager()
 
     # Mock process that yields a completed message event
-    async def mock_process(request):
+    async def mock_process(_request):
         event = MagicMock()
         event.object = "message"
 
@@ -53,9 +55,14 @@ class TestConversationRelayHandler:
     @pytest.mark.asyncio
     async def test_handle_setup(self):
         messages = [
-            {"type": "setup", "callSid": "CA123", "from": "+15551234567", "to": "+15559876543"},
+            {
+                "type": "setup",
+                "callSid": "CA123",
+                "from": "+15551234567",
+                "to": "+15559876543",
+            },
         ]
-        handler, ws, session_mgr = _make_handler(messages)
+        handler, _ws, session_mgr = _make_handler(messages)
         await handler.handle()
 
         assert handler.call_sid == "CA123"
@@ -65,26 +72,37 @@ class TestConversationRelayHandler:
     @pytest.mark.asyncio
     async def test_handle_prompt(self):
         messages = [
-            {"type": "setup", "callSid": "CA123", "from": "+1555", "to": "+1999"},
+            {
+                "type": "setup",
+                "callSid": "CA123",
+                "from": "+1555",
+                "to": "+1999",
+            },
             {"type": "prompt", "voicePrompt": "What's the weather?"},
         ]
-        handler, ws, session_mgr = _make_handler(messages)
+        handler, ws, _session_mgr = _make_handler(messages)
         await handler.handle()
 
         # Verify that text was sent back to Twilio
         calls = ws.send_text.call_args_list
-        text_sends = [
-            c for c in calls if c.args and "token" in str(c.args[0])
-        ]
+        text_sends = [c for c in calls if c.args and "token" in str(c.args[0])]
         assert len(text_sends) > 0
 
     @pytest.mark.asyncio
     async def test_handle_interrupt(self):
         messages = [
-            {"type": "setup", "callSid": "CA123", "from": "+1555", "to": "+1999"},
-            {"type": "interrupt", "utteranceUntilInterrupt": "Hello, I was say"},
+            {
+                "type": "setup",
+                "callSid": "CA123",
+                "from": "+1555",
+                "to": "+1999",
+            },
+            {
+                "type": "interrupt",
+                "utteranceUntilInterrupt": "Hello, I was say",
+            },
         ]
-        handler, ws, session_mgr = _make_handler(messages)
+        handler, _ws, _session_mgr = _make_handler(messages)
         await handler.handle()
         # Interrupt handling is logged but doesn't crash
         assert handler.call_sid == "CA123"
@@ -92,18 +110,23 @@ class TestConversationRelayHandler:
     @pytest.mark.asyncio
     async def test_handle_dtmf(self):
         messages = [
-            {"type": "setup", "callSid": "CA123", "from": "+1555", "to": "+1999"},
+            {
+                "type": "setup",
+                "callSid": "CA123",
+                "from": "+1555",
+                "to": "+1999",
+            },
             {"type": "dtmf", "digit": "5"},
         ]
-        handler, ws, session_mgr = _make_handler(messages)
+        handler, _ws, _session_mgr = _make_handler(messages)
         await handler.handle()
         # DTMF handling is logged but doesn't crash
         assert handler.call_sid == "CA123"
 
     @pytest.mark.asyncio
     async def test_send_text(self):
-        handler, ws, session_mgr = _make_handler(messages=[])
-        handler._closed = False
+        handler, ws, _session_mgr = _make_handler(messages=[])
+        handler._closed = False  # pylint: disable=protected-access
 
         await handler.send_text("Hello!")
 
@@ -113,12 +136,12 @@ class TestConversationRelayHandler:
 
     @pytest.mark.asyncio
     async def test_close(self):
-        handler, ws, session_mgr = _make_handler(messages=[])
-        handler._closed = False
+        handler, ws, _session_mgr = _make_handler(messages=[])
+        handler._closed = False  # pylint: disable=protected-access
 
         await handler.close()
 
-        assert handler._closed is True
+        assert handler._closed is True  # pylint: disable=protected-access
         # Should have sent end message
         end_call = None
         for call in ws.send_text.call_args_list:
@@ -130,9 +153,14 @@ class TestConversationRelayHandler:
     @pytest.mark.asyncio
     async def test_session_ended_on_disconnect(self):
         messages = [
-            {"type": "setup", "callSid": "CA123", "from": "+1555", "to": "+1999"},
+            {
+                "type": "setup",
+                "callSid": "CA123",
+                "from": "+1555",
+                "to": "+1999",
+            },
         ]
-        handler, ws, session_mgr = _make_handler(messages)
+        handler, _ws, session_mgr = _make_handler(messages)
         await handler.handle()
 
         # After WS closes, session should be ended
@@ -143,15 +171,21 @@ class TestConversationRelayHandler:
     @pytest.mark.asyncio
     async def test_empty_prompt_ignored(self):
         messages = [
-            {"type": "setup", "callSid": "CA123", "from": "+1555", "to": "+1999"},
+            {
+                "type": "setup",
+                "callSid": "CA123",
+                "from": "+1555",
+                "to": "+1999",
+            },
             {"type": "prompt", "voicePrompt": "   "},
         ]
-        handler, ws, session_mgr = _make_handler(messages)
+        handler, ws, _session_mgr = _make_handler(messages)
         await handler.handle()
 
         # Only setup message processed; no text sent for empty prompt
         text_sends = [
-            c for c in ws.send_text.call_args_list
+            c
+            for c in ws.send_text.call_args_list
             if c.args and "token" in str(c.args[0])
         ]
         assert len(text_sends) == 0

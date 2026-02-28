@@ -16,7 +16,7 @@ def _parse(xml_str: str) -> ET.Element:
 class TestConversationRelayTwiml:
     def test_basic_generation(self):
         twiml = build_conversation_relay_twiml(
-            "wss://example.trycloudflare.com/voice/ws"
+            "wss://example.trycloudflare.com/voice/ws",
         )
         root = _parse(twiml)
         assert root.tag == "Response"
@@ -26,7 +26,9 @@ class TestConversationRelayTwiml:
 
         relay = connect.find("ConversationRelay")
         assert relay is not None
-        assert relay.attrib["url"] == "wss://example.trycloudflare.com/voice/ws"
+        assert (
+            relay.attrib["url"] == "wss://example.trycloudflare.com/voice/ws"
+        )
         assert relay.attrib["interruptible"] == "true"
 
     def test_custom_params(self):

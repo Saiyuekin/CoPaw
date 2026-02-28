@@ -72,14 +72,14 @@ class VoiceChannel(BaseChannel):
 
         if not self.twilio_mgr:
             logger.warning(
-                "Voice channel enabled but Twilio credentials missing"
+                "Voice channel enabled but Twilio credentials missing",
             )
             return
 
         phone_number_sid = getattr(self._config, "phone_number_sid", "")
         if not phone_number_sid:
             logger.warning(
-                "Voice channel enabled but phone_number_sid not configured"
+                "Voice channel enabled but phone_number_sid not configured",
             )
             return
 
@@ -99,7 +99,8 @@ class VoiceChannel(BaseChannel):
         webhook_url = f"{tunnel_info.public_url}/voice/incoming"
         try:
             await self.twilio_mgr.configure_voice_webhook(
-                phone_number_sid, webhook_url
+                phone_number_sid,
+                webhook_url,
             )
         except Exception:
             logger.exception("Failed to configure Twilio webhook")
@@ -185,10 +186,21 @@ class VoiceChannel(BaseChannel):
             if phone_number_sid and self.twilio_mgr:
                 webhook_url = f"{tunnel_info.public_url}/voice/incoming"
                 await self.twilio_mgr.configure_voice_webhook(
-                    phone_number_sid, webhook_url
+                    phone_number_sid,
+                    webhook_url,
                 )
         except Exception:
             logger.exception("Failed to restart tunnel")
+
+    @property
+    def config(self) -> Any:
+        """Public accessor for the channel configuration."""
+        return self._config
+
+    @property
+    def process(self) -> ProcessHandler:
+        """Public accessor for the process handler."""
+        return self._process
 
     def get_tunnel_url(self) -> str | None:
         """Return the current tunnel public URL."""

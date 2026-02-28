@@ -13,7 +13,13 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Request, Response, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    Request,
+    Response,
+    WebSocket,
+    WebSocketDisconnect,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +57,7 @@ async def voice_incoming(request: Request) -> Response:
         twiml = build_error_twiml("Voice channel is not available.")
         return Response(content=twiml, media_type="application/xml")
 
-    config = voice_ch._config
+    config = voice_ch.config
     max_calls = getattr(config, "max_concurrent_calls", 1)
     if voice_ch.session_mgr.active_count() >= max_calls:
         twiml = build_busy_twiml()
@@ -93,7 +99,7 @@ async def voice_ws(websocket: WebSocket) -> None:
 
     handler = ConversationRelayHandler(
         ws=websocket,
-        process=voice_ch._process,
+        process=voice_ch.process,
         session_mgr=voice_ch.session_mgr,
         channel_type=voice_ch.channel,
     )
@@ -113,7 +119,9 @@ async def voice_status_callback(request: Request) -> Response:
     call_sid = form.get("CallSid", "")
     call_status = form.get("CallStatus", "")
     logger.info(
-        "Call status callback: call_sid=%s status=%s", call_sid, call_status
+        "Call status callback: call_sid=%s status=%s",
+        call_sid,
+        call_status,
     )
 
     if call_status in ("completed", "busy", "no-answer", "canceled", "failed"):
@@ -142,7 +150,7 @@ async def voice_status(request: Request):
             "phone_number": None,
         }
 
-    config = voice_ch._config
+    config = voice_ch.config
     return {
         "enabled": getattr(config, "enabled", False),
         "tunnel_url": voice_ch.get_tunnel_url(),
@@ -188,7 +196,7 @@ async def voice_numbers_search(
                     "country": n.country,
                 }
                 for n in numbers
-            ]
+            ],
         }
     except Exception as e:
         logger.exception("Failed to search numbers")
@@ -244,5 +252,5 @@ async def voice_calls(request: Request):
                 "status": s.status,
             }
             for s in voice_ch.session_mgr.all_sessions()
-        ]
+        ],
     }

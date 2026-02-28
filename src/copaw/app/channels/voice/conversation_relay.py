@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from agentscope_runtime.engine.schemas.agent_schemas import (
     ContentType,
@@ -49,7 +49,7 @@ class ConversationRelayHandler:
         self._session_mgr = session_mgr
         self._channel_type = channel_type
 
-        self.call_sid: Optional[str] = None
+        self.call_sid: str = ""
         self.caller_info: dict[str, str] = {}
         self._closed = False
 
@@ -144,7 +144,9 @@ class ConversationRelayHandler:
         """Process a ``dtmf`` message (keypad press)."""
         digit = msg.get("digit", "")
         logger.info(
-            "DTMF received: call_sid=%s digit=%s", self.call_sid, digit
+            "DTMF received: call_sid=%s digit=%s",
+            self.call_sid,
+            digit,
         )
         # DTMF handling deferred to future version.
 
@@ -192,14 +194,15 @@ class ConversationRelayHandler:
                             err_msg,
                         )
                         text_parts.append(
-                            "I'm having trouble right now. Please try again."
+                            "I'm having trouble right now. Please try again.",
                         )
         except Exception:
             logger.exception(
-                "Error processing voice request: call_sid=%s", self.call_sid
+                "Error processing voice request: call_sid=%s",
+                self.call_sid,
             )
             text_parts.append(
-                "I'm having trouble right now. Please try again."
+                "I'm having trouble right now. Please try again.",
             )
 
         return " ".join(text_parts)
@@ -230,7 +233,7 @@ class ConversationRelayHandler:
             return
         try:
             await self.ws.send_text(
-                json.dumps({"type": "text", "token": text, "last": True})
+                json.dumps({"type": "text", "token": text, "last": True}),
             )
         except Exception:
             logger.warning(

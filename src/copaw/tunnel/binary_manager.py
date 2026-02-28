@@ -65,7 +65,7 @@ class BinaryManager:
             raise RuntimeError(
                 f"No cloudflared download available for {key}. "
                 "Install it manually: https://developers.cloudflare.com"
-                "/cloudflare-one/connections/connect-networks/downloads/"
+                "/cloudflare-one/connections/connect-networks/downloads/",
             )
 
         self._bin_dir.mkdir(parents=True, exist_ok=True)
@@ -76,7 +76,10 @@ class BinaryManager:
         if url.endswith(".tgz"):
             import tarfile
 
-            with tempfile.NamedTemporaryFile(suffix=".tgz", delete=False) as tmp:
+            with tempfile.NamedTemporaryFile(
+                suffix=".tgz",
+                delete=False,
+            ) as tmp:
                 tmp_path = tmp.name
             try:
                 urlretrieve(url, tmp_path)

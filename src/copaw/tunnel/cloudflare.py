@@ -59,11 +59,13 @@ class CloudflareTunnelDriver:
             await self.stop()
 
         binary = await asyncio.get_event_loop().run_in_executor(
-            None, self._binary_mgr.get_binary_path
+            None,
+            self._binary_mgr.get_binary_path,
         )
 
         logger.info(
-            "Starting cloudflared tunnel -> http://localhost:%d", local_port
+            "Starting cloudflared tunnel -> http://localhost:%d",
+            local_port,
         )
 
         self._process = await asyncio.create_subprocess_exec(
@@ -79,7 +81,7 @@ class CloudflareTunnelDriver:
         if not url:
             await self.stop()
             raise RuntimeError(
-                "cloudflared did not produce a tunnel URL within 30 seconds"
+                "cloudflared did not produce a tunnel URL within 30 seconds",
             )
 
         self._info = TunnelInfo(
@@ -120,10 +122,7 @@ class CloudflareTunnelDriver:
 
     async def health_check(self) -> bool:
         """Return True if the tunnel process is running."""
-        return (
-            self._process is not None
-            and self._process.returncode is None
-        )
+        return self._process is not None and self._process.returncode is None
 
     def get_public_url(self) -> str | None:
         """Return the current public URL, or None if not running."""
@@ -143,7 +142,10 @@ class CloudflareTunnelDriver:
             try:
                 line = await asyncio.wait_for(
                     self._process.stderr.readline(),
-                    timeout=max(0.1, deadline - asyncio.get_event_loop().time()),
+                    timeout=max(
+                        0.1,
+                        deadline - asyncio.get_event_loop().time(),
+                    ),
                 )
             except asyncio.TimeoutError:
                 break
@@ -169,7 +171,10 @@ class CloudflareTunnelDriver:
                 return
 
             rc = self._process.returncode
-            logger.warning("cloudflared exited with code %s, restarting...", rc)
+            logger.warning(
+                "cloudflared exited with code %s, restarting...",
+                rc,
+            )
 
             try:
                 await asyncio.sleep(2)

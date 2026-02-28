@@ -129,16 +129,25 @@ export function ChannelDrawer({
       case "voice":
         return (
           <>
-            <Form.Item name="twilio_account_sid" label={t("channels.twilioAccountSid")}>
+            <Form.Item
+              name="twilio_account_sid"
+              label={t("channels.twilioAccountSid")}
+            >
               <Input placeholder="ACxxxxxxxx" />
             </Form.Item>
-            <Form.Item name="twilio_auth_token" label={t("channels.twilioAuthToken")}>
+            <Form.Item
+              name="twilio_auth_token"
+              label={t("channels.twilioAuthToken")}
+            >
               <Input.Password />
             </Form.Item>
             <Form.Item name="phone_number" label={t("channels.phoneNumber")}>
               <Input placeholder="+15551234567" />
             </Form.Item>
-            <Form.Item name="phone_number_sid" label={t("channels.phoneNumberSid")}>
+            <Form.Item
+              name="phone_number_sid"
+              label={t("channels.phoneNumberSid")}
+            >
               <Input placeholder="PNxxxxxxxx" />
             </Form.Item>
             <Form.Item name="tts_provider" label={t("channels.ttsProvider")}>
@@ -153,10 +162,16 @@ export function ChannelDrawer({
             <Form.Item name="language" label={t("channels.language")}>
               <Input placeholder="en-US" />
             </Form.Item>
-            <Form.Item name="welcome_greeting" label={t("channels.welcomeGreeting")}>
+            <Form.Item
+              name="welcome_greeting"
+              label={t("channels.welcomeGreeting")}
+            >
               <Input.TextArea rows={2} />
             </Form.Item>
-            <Form.Item name="max_concurrent_calls" label={t("channels.maxConcurrentCalls")}>
+            <Form.Item
+              name="max_concurrent_calls"
+              label={t("channels.maxConcurrentCalls")}
+            >
               <InputNumber min={1} style={{ width: "100%" }} />
             </Form.Item>
             <Form.Item name="local_port" label={t("channels.localPort")}>

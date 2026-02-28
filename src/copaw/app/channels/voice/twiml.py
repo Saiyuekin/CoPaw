@@ -39,7 +39,9 @@ def build_conversation_relay_twiml(
     )
 
 
-def build_busy_twiml(message: str = "CoPaw is on another call. Please try again later.") -> str:
+def build_busy_twiml(
+    message: str = "CoPaw is on another call. Please try again later.",
+) -> str:
     """Build TwiML that speaks a message and hangs up."""
     return (
         '<?xml version="1.0" encoding="UTF-8"?>'
@@ -49,6 +51,8 @@ def build_busy_twiml(message: str = "CoPaw is on another call. Please try again 
     )
 
 
-def build_error_twiml(message: str = "An error occurred. Please try again later.") -> str:
+def build_error_twiml(
+    message: str = "An error occurred. Please try again later.",
+) -> str:
     """Build TwiML that speaks an error message and hangs up."""
     return build_busy_twiml(message)

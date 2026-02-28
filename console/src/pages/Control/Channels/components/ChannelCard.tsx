@@ -1,6 +1,9 @@
 import { Card } from "@agentscope-ai/design";
 import { useTranslation } from "react-i18next";
-import type { SingleChannelConfig, VoiceChannelConfig } from "../../../../api/types";
+import type {
+  SingleChannelConfig,
+  VoiceChannelConfig,
+} from "../../../../api/types";
 import { CHANNEL_LABELS, type ChannelKey } from "./constants";
 import styles from "../index.module.less";
 
@@ -56,7 +59,8 @@ export function ChannelCard({
         {channelKey === "voice" ? (
           <>
             {t("channels.phoneNumber")}:{" "}
-            {(config as VoiceChannelConfig).phone_number || t("channels.notSet")}
+            {(config as VoiceChannelConfig).phone_number ||
+              t("channels.notSet")}
           </>
         ) : (
           <>
