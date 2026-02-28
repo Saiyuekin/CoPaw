@@ -2,7 +2,7 @@
 """TwiML generation helpers for the Voice channel."""
 from __future__ import annotations
 
-from xml.sax.saxutils import escape, quoteattr
+import xml.etree.ElementTree as ET
 
 
 def build_conversation_relay_twiml(
@@ -20,35 +20,32 @@ def build_conversation_relay_twiml(
     Returns an XML string suitable as an HTTP response to Twilio's
     incoming call webhook.
     """
-    attrs = (
-        f"url={quoteattr(ws_url)}"
-        f" welcomeGreeting={quoteattr(welcome_greeting)}"
-        f" ttsProvider={quoteattr(tts_provider)}"
-        f" voice={quoteattr(tts_voice)}"
-        f" transcriptionProvider={quoteattr(stt_provider)}"
-        f" language={quoteattr(language)}"
-        f' interruptible="{str(interruptible).lower()}"'
+    response_el = ET.Element("Response")
+    connect_el = ET.SubElement(response_el, "Connect")
+    ET.SubElement(
+        connect_el,
+        "ConversationRelay",
+        url=ws_url,
+        welcomeGreeting=welcome_greeting,
+        ttsProvider=tts_provider,
+        voice=tts_voice,
+        transcriptionProvider=stt_provider,
+        language=language,
+        interruptible=str(interruptible).lower(),
     )
-    return (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        "<Response>"
-        "<Connect>"
-        f"<ConversationRelay {attrs}/>"
-        "</Connect>"
-        "</Response>"
-    )
+    xml_body = ET.tostring(response_el, encoding="unicode")
+    return f'<?xml version="1.0" encoding="UTF-8"?>{xml_body}'
 
 
 def build_busy_twiml(
     message: str = "CoPaw is on another call. Please try again later.",
 ) -> str:
     """Build TwiML that speaks a message and hangs up."""
-    return (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        "<Response>"
-        f"<Say>{escape(message)}</Say>"
-        "</Response>"
-    )
+    response_el = ET.Element("Response")
+    say_el = ET.SubElement(response_el, "Say")
+    say_el.text = message
+    xml_body = ET.tostring(response_el, encoding="unicode")
+    return f'<?xml version="1.0" encoding="UTF-8"?>{xml_body}'
 
 
 def build_error_twiml(

@@ -15,6 +15,7 @@ from typing import Optional
 
 from fastapi import (
     APIRouter,
+    Depends,
     Request,
     Response,
     WebSocket,
@@ -43,7 +44,45 @@ def _get_voice_channel(request_or_ws):
     return None
 
 
-@voice_router.post("/voice/incoming")
+async def _validate_twilio_signature(request: Request) -> None:
+    """Validate that the request originated from Twilio.
+
+    Uses Twilio's ``RequestValidator`` to verify the
+    ``X-Twilio-Signature`` header.  If the voice channel has no
+    auth token configured the check is skipped (dev mode).
+    """
+    voice_ch = _get_voice_channel(request)
+    if not voice_ch:
+        return
+
+    auth_token = getattr(voice_ch.config, "twilio_auth_token", "")
+    if not auth_token:
+        # No token configured -- skip validation (local dev)
+        return
+
+    signature = request.headers.get("X-Twilio-Signature", "")
+    if not signature:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=403, detail="Missing Twilio signature")
+
+    from twilio.request_validator import RequestValidator
+
+    validator = RequestValidator(auth_token)
+    form = await request.form()
+    url = str(request.url)
+    params = {k: str(v) for k, v in form.items()}
+
+    if not validator.validate(url, params, signature):
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=403, detail="Invalid Twilio signature")
+
+
+@voice_router.post(
+    "/voice/incoming",
+    dependencies=[Depends(_validate_twilio_signature)],
+)
 async def voice_incoming(request: Request) -> Response:
     """Twilio webhook: return TwiML for an incoming call."""
     from ..channels.voice.twiml import (
@@ -112,7 +151,10 @@ async def voice_ws(websocket: WebSocket) -> None:
             voice_ch.session_mgr.end_session(handler.call_sid)
 
 
-@voice_router.post("/voice/status-callback")
+@voice_router.post(
+    "/voice/status-callback",
+    dependencies=[Depends(_validate_twilio_signature)],
+)
 async def voice_status_callback(request: Request) -> Response:
     """Twilio call status change webhook."""
     form = await request.form()
@@ -134,6 +176,8 @@ async def voice_status_callback(request: Request) -> Response:
 
 # ---------------------------------------------------------------------------
 # Console-facing API router (mounted under /api/)
+# NOTE: Authentication is not yet implemented for any CoPaw API route.
+# When project-wide auth is added, these endpoints should be gated too.
 # ---------------------------------------------------------------------------
 voice_api_router = APIRouter(prefix="/voice", tags=["voice"])
 

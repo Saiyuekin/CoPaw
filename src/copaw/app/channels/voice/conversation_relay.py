@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_ERROR_MSG = "I'm having trouble right now. Please try again."
+
 
 class ConversationRelayHandler:
     """Handle one call's WebSocket session with Twilio ConversationRelay.
@@ -123,11 +125,8 @@ class ConversationRelayHandler:
 
         request = self._build_agent_request(user_text)
 
-        # Process through CoPaw agent and send response back to Twilio.
-        response_text = await self._process_and_collect(request)
-
-        if response_text and not self._closed:
-            await self.send_text(response_text)
+        # Process through CoPaw agent and stream response to Twilio.
+        await self._process_and_stream(request)
 
     async def _handle_interrupt(self, msg: dict) -> None:
         """Process an ``interrupt`` message -- caller started speaking."""
@@ -171,19 +170,21 @@ class ConversationRelayHandler:
             channel=self._channel_type,
         )
 
-    async def _process_and_collect(self, request: Any) -> str:
-        """Run the request through the agent and collect the full response."""
-        text_parts: list[str] = []
+    async def _process_and_stream(self, request: Any) -> None:
+        """Run the request through the agent, streaming tokens to Twilio."""
+        sent_any = False
         try:
             async for event in self._process(request):
+                if self._closed:
+                    break
                 obj = getattr(event, "object", None)
                 status = getattr(event, "status", None)
 
                 if obj == "message" and status == RunStatus.Completed:
-                    # Extract text from the completed message
                     text = self._extract_text_from_event(event)
                     if text:
-                        text_parts.append(text)
+                        await self._send_token(text, last=False)
+                        sent_any = True
                 elif obj == "response":
                     err = getattr(event, "error", None)
                     if err:
@@ -193,19 +194,26 @@ class ConversationRelayHandler:
                             self.call_sid,
                             err_msg,
                         )
-                        text_parts.append(
-                            "I'm having trouble right now. Please try again.",
+                        await self._send_token(
+                            _ERROR_MSG,
+                            last=False,
                         )
+                        sent_any = True
         except Exception:
             logger.exception(
                 "Error processing voice request: call_sid=%s",
                 self.call_sid,
             )
-            text_parts.append(
-                "I'm having trouble right now. Please try again.",
-            )
+            if not self._closed:
+                await self._send_token(
+                    _ERROR_MSG,
+                    last=False,
+                )
+                sent_any = True
 
-        return " ".join(text_parts)
+        # Send final marker so Twilio knows TTS playback can start.
+        if sent_any and not self._closed:
+            await self._send_token("", last=True)
 
     @staticmethod
     def _extract_text_from_event(event: Any) -> str:
@@ -227,13 +235,20 @@ class ConversationRelayHandler:
                     parts.append(refusal.strip())
         return " ".join(parts)
 
-    async def send_text(self, text: str) -> None:
-        """Send text to Twilio for TTS playback."""
+    async def _send_token(
+        self,
+        token: str,
+        *,
+        last: bool = False,
+    ) -> None:
+        """Send a single text token to Twilio for TTS playback."""
         if self._closed:
             return
         try:
             await self.ws.send_text(
-                json.dumps({"type": "text", "token": text, "last": True}),
+                json.dumps(
+                    {"type": "text", "token": token, "last": last},
+                ),
             )
         except Exception:
             logger.warning(
@@ -241,6 +256,10 @@ class ConversationRelayHandler:
                 self.call_sid,
             )
             self._closed = True
+
+    async def send_text(self, text: str) -> None:
+        """Send text to Twilio for TTS playback (convenience wrapper)."""
+        await self._send_token(text, last=True)
 
     async def close(self) -> None:
         """Send end signal and close the WebSocket."""

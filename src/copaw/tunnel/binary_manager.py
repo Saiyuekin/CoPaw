@@ -23,7 +23,7 @@ _DOWNLOAD_URLS: dict[tuple[str, str], str] = {
     ),
     ("Darwin", "arm64"): (
         "https://github.com/cloudflare/cloudflared/releases/latest"
-        "/download/cloudflared-darwin-amd64.tgz"
+        "/download/cloudflared-darwin-arm64.tgz"
     ),
     ("Linux", "x86_64"): (
         "https://github.com/cloudflare/cloudflared/releases/latest"

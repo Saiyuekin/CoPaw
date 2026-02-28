@@ -83,10 +83,20 @@ class TestConversationRelayHandler:
         handler, ws, _session_mgr = _make_handler(messages)
         await handler.handle()
 
-        # Verify that text was sent back to Twilio
+        # Verify streaming: content token + final marker
         calls = ws.send_text.call_args_list
-        text_sends = [c for c in calls if c.args and "token" in str(c.args[0])]
-        assert len(text_sends) > 0
+        token_msgs = [
+            json.loads(c.args[0])
+            for c in calls
+            if c.args and "token" in str(c.args[0])
+        ]
+        assert len(token_msgs) >= 2
+        # First should be the response content with last=False
+        assert token_msgs[0]["token"] == "Hello from CoPaw!"
+        assert token_msgs[0]["last"] is False
+        # Last should be the empty final marker with last=True
+        assert token_msgs[-1]["token"] == ""
+        assert token_msgs[-1]["last"] is True
 
     @pytest.mark.asyncio
     async def test_handle_interrupt(self):
